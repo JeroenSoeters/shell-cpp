@@ -261,22 +261,22 @@ namespace shell
       close( pipe[1] );
    }
 
-   pid_t executeChained( command* cmd, std::array< int, 2 > prev_pipe, std::array< int, 2 > next_pipe ) {
+   pid_t executeChained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) {
       pid_t pid;
 
       if ( (pid = fork()) < 0 ) {
          std::exit( EXIT_FAILURE );                      // Fork failed.
       }
       else if ( pid == 0 ) {                             // In child process.
-         if ( prev_pipe != NULL ) {                  // If there is a previous pipe, read from it.
-            readFromPipe( prev_pipe.data() );
+         if ( has_prev_pipe ) {                  // If there is a previous pipe, read from it.
+            readFromPipe( prev_pipe );
          } 
          else if ( cmd->hasFileInput() ) {               // First process in the chain, check if input should be read from file.
             readFromFile( cmd->input_file );
          }
          
-         if ( next_pipe != NULL ) {
-            writeToPipe( next_pipe.data() );                    // If there is a next pipe, write to it.
+         if ( has_next_pipe ) {
+            writeToPipe( next_pipe );                    // If there is a next pipe, write to it.
          }
          else if ( cmd->hasFileOutput() ) {              // Last process in the chain, check if output should be written to file.
             writeToFile( cmd->output_file );
@@ -285,8 +285,8 @@ namespace shell
          overlayProcess( cmd->args );                    // Overlay the process image with that of the command.
       }
       else {                                             // In parent process.
-         if ( prev_pipe != NULL ) {                  // If there is a previous pipe, close it.
-            closePipe( prev_pipe.data() );
+         if ( has_prev_pipe ) {                  // If there is a previous pipe, close it.
+            closePipe( prev_pipe );
          };
       }
 
@@ -299,23 +299,25 @@ namespace shell
       std::array< int, 2 > prev_pipe, next_pipe;
       int  pid, status, i;
       command *cmd;
+      bool has_prev;
 
       for ( i = 0; i < cmdl.numberOfCommands - 1; i++ ) {
          cmd = cmdl.commands.front();
          cmdl.commands.pop_front();
 
-         if ( pipe( next_pipe.value().data() ) < 0 ) {
+         if ( pipe( next_pipe.data() ) < 0 ) {
             std::exit( EXIT_FAILURE );               // Pipe failed
          }
 
-         pids.push_front( executeChained( cmd, prev_pipe, next_pipe ) );
+         pids.push_front( executeChained( cmd, has_prev, prev_pipe, true, next_pipe ) );
     
-         prev_pipe.swap( next_pipe.value() );
+         prev_pipe = next_pipe;
+         has_prev = true;
       }
 
       cmd = cmdl.commands.front();
 
-      pids.push_front( executeChained( cmd, prev_pipe, next_pipe ) );
+      pids.push_front( executeChained( cmd, has_prev, prev_pipe, false, next_pipe ) );
 
       while ( pids.size() > 1 ) {
          waitpid( pids.front(), NULL, WUNTRACED );
