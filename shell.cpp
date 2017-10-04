@@ -40,11 +40,11 @@ namespace shell
       std::vector< std::string > args;
       std::string input_file, output_file;
 
-      bool hasFileInput() {
+      bool has_file_input() {
          return input_file != "";
       }
 
-      bool hasFileOutput() {
+      bool has_file_output() {
          return output_file != "";
       }
    };
@@ -55,6 +55,13 @@ namespace shell
       std::list< command* > commands;
 
       bool runInBackground;
+
+      command *pop_first_command() {
+         command *first = commands.front();
+         commands.pop_front();
+
+         return first;
+      }
    };
 }
 
@@ -209,7 +216,7 @@ namespace grammar
 
 namespace shell
 {
-   char** convertToCArgs( std::vector< std::string > args ) {
+   char** convert_to_c_args( std::vector< std::string > args ) {
       char** c_args = new char*[args.size()+1];
       for ( int i = 0; i < args.size(); ++i )
          c_args[i] = strdup( args[i].c_str() );
@@ -218,106 +225,83 @@ namespace shell
       return c_args;
    }
 
-   void freeCArgs( char** c_args, int number_of_c_args ) {
+   void free_c_args( char** c_args, int number_of_c_args ) {
       for (int i = 0; i < number_of_c_args; ++i)
          free( c_args[i] );
       delete[] c_args;
    }
 
    void overlayProcess( std::vector< std::string > args ) {
-      char** c_args = convertToCArgs( args );
+      char** c_args = convert_to_c_args( args );
       execvp( c_args[0], c_args );
 
       // there must be an error if we get to here
-      freeCArgs( c_args, args.size() );
+      free_c_args( c_args, args.size() );
 
       std::exit( EXIT_FAILURE );
    }
 
-   void readFromFile( std::string input_file ) {
+   void read_from_file( std::string input_file ) {
       int fd = open( input_file.c_str(), O_RDONLY, S_IRUSR );
       close( STDIN_FILENO );
       dup( fd );
    }
 
-   void writeToFile( std::string output_file ) { 
+   void write_to_file( std::string output_file ) { 
       int fd = open( output_file.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR );
       close( STDOUT_FILENO );
       dup( fd );
    }
 
-   void readFromPipe( std::array< int, 2 > pipe ) {
+   void read_from_pipe( std::array< int, 2 > pipe ) {
       dup2( pipe[0], 0 );
       close( pipe[1] );
    }
 
-   void writeToPipe( std::array< int, 2 > pipe ) {
+   void write_to_pipe( std::array< int, 2 > pipe ) {
       close( pipe[0] );
       dup2( pipe[1], 1 );
    }
 
-   void closePipe( std::array< int, 2 > pipe ) {
+   void close_pipe( std::array< int, 2 > pipe ) {
       close( pipe[0] );
       close( pipe[1] );
    }
 
-   pid_t executeChained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) {
+   pid_t execute_chained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) {
       pid_t pid;
 
       if ( (pid = fork()) < 0 ) {
-         std::exit( EXIT_FAILURE );                      // Fork failed.
+         std::exit( EXIT_FAILURE );                         // Fork failed.
       }
-      else if ( pid == 0 ) {                             // In child process.
-         if ( has_prev_pipe ) {                  // If there is a previous pipe, read from it.
-            readFromPipe( prev_pipe );
+      else if ( pid == 0 ) {                                // In child process.
+         if ( has_prev_pipe ) {                             // If there is a previous pipe, read from it.
+            read_from_pipe( prev_pipe );
          } 
-         else if ( cmd->hasFileInput() ) {               // First process in the chain, check if input should be read from file.
-            readFromFile( cmd->input_file );
+         else if ( cmd->has_file_input() ) {                // First process in the chain, check if input should be read from file.
+            read_from_file( cmd->input_file );
          }
          
          if ( has_next_pipe ) {
-            writeToPipe( next_pipe );                    // If there is a next pipe, write to it.
+            write_to_pipe( next_pipe );                     // If there is a next pipe, write to it.
          }
-         else if ( cmd->hasFileOutput() ) {              // Last process in the chain, check if output should be written to file.
-            writeToFile( cmd->output_file );
+         else if ( cmd->has_file_output() ) {               // Last process in the chain, check if output should be written to file.
+            write_to_file( cmd->output_file );
          }
 
-         overlayProcess( cmd->args );                    // Overlay the process image with that of the command.
+         overlayProcess( cmd->args );                       // Overlay the process image with that of the command.
       }
-      else {                                             // In parent process.
-         if ( has_prev_pipe ) {                  // If there is a previous pipe, close it.
-            closePipe( prev_pipe );
+      else {                                                // In parent process.
+         if ( has_prev_pipe ) {                             // If there is a previous pipe, close it.
+            close_pipe( prev_pipe );
          };
       }
 
       return pid;
    }
 
-   // Executes a command with arguments. In case of failure, returns error code.
-   int executeCommand( commandline& cmdl ) {
-      std::list < pid_t > pids;
-      std::array< int, 2 > prev_pipe, next_pipe;
-      int  pid, status, i;
-      command *cmd;
-      bool has_prev;
-
-      for ( i = 0; i < cmdl.numberOfCommands - 1; i++ ) {
-         cmd = cmdl.commands.front();
-         cmdl.commands.pop_front();
-
-         if ( pipe( next_pipe.data() ) < 0 ) {
-            std::exit( EXIT_FAILURE );               // Pipe failed
-         }
-
-         pids.push_front( executeChained( cmd, has_prev, prev_pipe, true, next_pipe ) );
-    
-         prev_pipe = next_pipe;
-         has_prev = true;
-      }
-
-      cmd = cmdl.commands.front();
-
-      pids.push_front( executeChained( cmd, has_prev, prev_pipe, false, next_pipe ) );
+   int wait_for_process_chain( std::list< pid_t > pids ) {
+      int status;
 
       while ( pids.size() > 1 ) {
          waitpid( pids.front(), NULL, WUNTRACED );
@@ -328,7 +312,33 @@ namespace shell
       return status;
    }
 
-   void displayPrompt() {
+   int execute_commandline( commandline& cmdl ) {
+      std::list < pid_t > pids;
+      std::array< int, 2 > prev_pipe, next_pipe;
+      bool has_prev, has_next;
+      int i;
+      command *cmd;
+
+      for ( i = 0; i < cmdl.numberOfCommands ; i++ ) {      
+         cmd = cmdl.pop_first_command();                    // Pop the first command
+         has_next = i != cmdl.numberOfCommands - 1;         
+
+         if ( pipe( next_pipe.data() ) < 0 ) {
+            std::exit( EXIT_FAILURE );                      // Pipe failed
+         }
+
+         pids.push_front( 
+            execute_chained( cmd, has_prev, prev_pipe, has_next, next_pipe ) 
+         );
+    
+         prev_pipe = next_pipe;
+         has_prev = true;
+      }
+
+      return wait_for_process_chain( pids );
+   }
+
+   void display_prompt() {
       char buffer[512];
       char* dir = getcwd(buffer, sizeof(buffer));
       if (dir)
@@ -337,30 +347,32 @@ namespace shell
       std::flush(std::cout);
    }
 
-   std::string requestCommandLine( bool showPrompt ) {
-      if ( showPrompt )
-         displayPrompt();
+   std::string request_commandLine( bool show_prompt ) {
+      if ( show_prompt )
+         display_prompt();
       std::string retval;
       getline( std::cin, retval );
+ 
       return retval;
    }
 
-   void parseCommand( std::string input, commandline& cmdl ) {
+   void parse_command( std::string input, commandline& cmdl ) {
       grammar::string_input<> in( input, "std::string" );
       tao::pegtl::parse< grammar::grammar, grammar::action >( in, cmdl );
    }
 }
 
-int run_shell( bool showPrompt ) {
+int run_shell( bool show_prompt ) {
    using namespace shell;
 
    commandline cmdl;
 
-   std::string input = requestCommandLine(showPrompt);
-   parseCommand( input, cmdl );
+   std::string input = request_commandLine(show_prompt);
+   parse_command( input, cmdl );
 
-   int rc = executeCommand( cmdl );
+   int rc = execute_commandline( cmdl );
    if ( rc != 0 )
       std::cout << strerror( rc ) << std::endl;
+
    return 0;
 }

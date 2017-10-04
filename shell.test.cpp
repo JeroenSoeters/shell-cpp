@@ -65,7 +65,7 @@ namespace {
 
       expected_args = { "foo" };
 
-      parseCommand( "foo &", cmdl );
+      parse_command( "foo &", cmdl );
 
       EXPECT_EQ( expected_args, cmdl.commands.front()->args );
       EXPECT_TRUE( cmdl.runInBackground );
@@ -140,7 +140,7 @@ namespace {
       expected_number_of_commands = 3;
       expected_args = { { "ls" "-la" }, { "sort" }, { "uniq -i" } };
 
-      parseCommand( "ls -la | sort | uniq -l", cmdl );
+      parse_command( "ls -la | sort | uniq -l", cmdl );
 
       EXPECT_EQ( expected_number_of_commands, cmdl.numberOfCommands );
       EXPECT_FALSE( cmdl.runInBackground );
@@ -149,7 +149,7 @@ namespace {
    TEST( Shell, PipelineThatRunsInBackground ) {
       commandline cmdl;
 
-      parseCommand( "cat < inputfile | sort | uniq &", cmdl );
+      parse_command( "cat < inputfile | sort | uniq &", cmdl );
 
       EXPECT_TRUE( cmdl.runInBackground );
    }
@@ -165,7 +165,7 @@ namespace {
       expected_input_file = "inputfile";
       expected_output_file = "outputfile";
 
-      parseCommand( "ls -la < inputfile | sort | uniq -l > outputfile", cmdl );
+      parse_command( "ls -la < inputfile | sort | uniq -l > outputfile", cmdl );
 
       EXPECT_EQ( expected_number_of_commands, cmdl.numberOfCommands );
       EXPECT_EQ( expected_input_file, cmdl.commands.front()->input_file );
@@ -264,7 +264,7 @@ namespace {
 
    command *ParseSingleCommand( std::string input ) {
       commandline cmdl;
-      parseCommand( input, cmdl );
+      parse_command( input, cmdl );
 
       EXPECT_EQ( 1, cmdl.commands.size() );
 
