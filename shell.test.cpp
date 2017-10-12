@@ -2,21 +2,22 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include "shell.cpp"
+#include <list>
+
+#include "grammar.h"
+#include "shell.h"
 
 using namespace std;
+using namespace shell;
 
 // shell to run tests on
 #define SHELL "../build/shell -t"
 //#define SHELL "/bin/sh"
 
 // declarations of methods you want to test (should match exactly)
-std::vector<std::string> parseArguments( const std::string& str );
+//void parse_command( std::string input, shell::commandline& cmdl );
 
 namespace {
-
-   using namespace shell;
-
    void Execute( std::string command, std::string expectedOutput );
    void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent );
    command *ParseSingleCommand( std::string input );
@@ -176,30 +177,29 @@ namespace {
       Execute("cat < 1", "line 1\nline 2\nline 3\nline 4");
    }
 
-   TEST(Shell, ReadFromAndWriteToFile) {
+   TEST( Shell, ReadFromAndWriteToFile ) {
       Execute("cat < 1 > ../foobar", "", "../foobar", "line 1\nline 2\nline 3\nline 4");
    }
 
-   TEST(Shell, ReadFromAndWriteToFileChained) {
+   TEST( Shell, ReadFromAndWriteToFileChained ) {
       Execute("cat < 1 | head -n 3 > ../foobar", "", "../foobar", "line 1\nline 2\nline 3\n");
       Execute("cat < 1 | head -n 3 | tail -n 1 > ../foobar", "", "../foobar", "line 3\n");
    }
 
-   TEST(Shell, WriteToFile) {
+   TEST( Shell, WriteToFile ) {
       Execute("ls -1 > ../foobar", "", "../foobar", "1\n2\n3\n4\n");
    }
 
-   TEST(Shell, Execute) {
+   TEST( Shell, Execute ) {
       Execute("uname", "Darwin\n");
       Execute("ls", "1\n2\n3\n4\n");
       Execute("ls -1", "1\n2\n3\n4\n");
    }
 
-   TEST(Shell, ExecuteChained) {
+   TEST( Shell, ExecuteChained ) {
       Execute("ls -1 | head -n 2", "1\n2\n");
       Execute("ls -1 | head -n 2 | tail -n 1", "2\n");
    }
-
 
    //////////////// HELPERS
 

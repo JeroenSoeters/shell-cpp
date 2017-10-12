@@ -1,6 +1,7 @@
-extern int run_shell(bool prompt);
+extern int run_shell( bool prompt );
 
-int main(int argc, char** argv) {
+int main( int argc, char** argv ) {
     bool show_prompt = argc == 1;
-    return run_shell(show_prompt);
+
+    return run_shell( show_prompt );
 }

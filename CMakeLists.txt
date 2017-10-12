@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
-SET(SRC_LIST shell.cpp )
+SET(SRC_LIST shell.cpp grammar.cpp )
 add_library (${PROJECT_NAME}lib ${SRC_LIST})
 
 add_executable(${PROJECT_NAME} main.cpp)

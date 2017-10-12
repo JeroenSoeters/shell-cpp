@@ -31,188 +31,9 @@ Hint: Ctrl-space to auto complete functions and variables
 
 #include <tao/pegtl.hpp>
 
+#include "grammar.cpp"                                      // Would be nicer to extract this into a header file.
+#include "shell.h"
 
-namespace shell
-{
-
-   struct command
-   {
-      std::vector< std::string > args;
-      std::string input_file, output_file;
-
-      bool has_file_input() {
-         return input_file != "";
-      }
-
-      bool has_file_output() {
-         return output_file != "";
-      }
-   };
-
-   struct commandline
-   {
-      int numberOfCommands = 0;
-      std::list< command* > commands;
-
-      bool runInBackground;
-
-      command *pop_first_command() {
-         command *first = commands.front();
-         commands.pop_front();
-
-         return first;
-      }
-   };
-}
-
-namespace grammar
-{
-   // grammar
-   using namespace tao::pegtl;
-
-   struct whitespace
-      : plus< blank >
-   {
-   };
-
-   struct part
-      : plus< sor < alnum, one< '_' >, one< '-' >, one< '/' >, one< '.' > > >
-   {
-   };
-
-   struct arg
-      : part
-   {
-   };
-
-   struct input_file
-      : part
-   {
-   };
-
-   struct output_file
-      : part
-   {
-   };
-
-   struct pipe
-      : one< '|' >
-   {
-   };
-
-   struct background
-      : one< '&' >
-   {
-   };
-
-   struct command
-      : seq<
-        arg,
-        star< seq< whitespace, arg > >
-        >
-   {
-   };
-
-   struct redir_stdin
-      : seq<
-        one< '<' >,
-        opt< whitespace >,
-        input_file
-        >
-   {
-   };
-
-   struct redir_stdout
-      : seq<
-        one< '>' >,
-        opt< whitespace >,
-        output_file
-        >
-   {
-   };
-
-   struct commandline
-      : seq<
-        opt< whitespace >,
-        command,
-        opt< whitespace >,
-        opt< redir_stdin >,
-        opt< whitespace >,
-        star< seq< pipe, opt< whitespace >, command, opt< whitespace > > >,
-        opt< redir_stdout >,
-        opt< whitespace >,
-        opt< background >,
-        opt< whitespace >
-        >
-   {
-   };
-
-   struct grammar
-      : must< commandline, eolf >
-   {
-   };
-
-   template< typename Rule >
-      struct action
-      : nothing< Rule >
-      {
-      };
-
-   template<>
-      struct action< arg >
-      {
-         template< typename Input >
-            static void apply( const Input& in, shell::commandline& cmdl )
-            {
-               if ( cmdl.numberOfCommands == 0 ) {
-                  shell::command *cmd = new shell::command;
-                  cmdl.commands.push_back( cmd );
-                  cmdl.numberOfCommands++;
-               }
-
-               cmdl.commands.back()->args.push_back( in.string() );
-            };
-      };
-
-   template<>
-      struct action< background >
-      {
-         static void apply0( shell::commandline& cmdl )
-         {
-            cmdl.runInBackground = true;
-         };
-      };
-
-   template<>
-      struct action< input_file >
-      {
-         template< typename Input >
-            static void apply( const Input& in, shell::commandline& cmdl )
-            {
-               cmdl.commands.back()->input_file = in.string();
-            };
-      };
-
-   template<>
-      struct action< output_file >
-      {
-         template< typename Input >
-            static void apply( const Input& in, shell::commandline& cmdl )
-            {
-               cmdl.commands.back()->output_file = in.string();
-            };
-      };
-
-   template<>
-      struct action< pipe >
-      {
-         static void apply0( shell::commandline& cmdl )
-         {
-            cmdl.commands.push_back( new shell::command );
-            cmdl.numberOfCommands++;
-         };
-      };
-}
 
 namespace shell
 {
@@ -268,6 +89,7 @@ namespace shell
       close( pipe[1] );
    }
 
+   // Thiss would have been nicer with std::optional which doesn't compile on MacOSX.
    pid_t execute_chained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) {
       pid_t pid;
 
@@ -320,18 +142,18 @@ namespace shell
       command *cmd;
 
       for ( i = 0; i < cmdl.numberOfCommands ; i++ ) {      
-         cmd = cmdl.pop_first_command();                    // Pop the first command
+         cmd = cmdl.pop_first_command();                    // Pop the first command.
          has_next = i != cmdl.numberOfCommands - 1;         
 
          if ( pipe( next_pipe.data() ) < 0 ) {
-            std::exit( EXIT_FAILURE );                      // Pipe failed
+            std::exit( EXIT_FAILURE );                      // Pipe failed.
          }
 
          pids.push_front( 
             execute_chained( cmd, has_prev, prev_pipe, has_next, next_pipe ) 
          );
     
-         prev_pipe = next_pipe;
+         prev_pipe = next_pipe;                             // The output pipe for the current process will be the input pipe for the next process.
          has_prev = true;
       }
 
@@ -365,14 +187,28 @@ namespace shell
 int run_shell( bool show_prompt ) {
    using namespace shell;
 
-   commandline cmdl;
-
-   std::string input = request_commandLine(show_prompt);
-   parse_command( input, cmdl );
-
-   int rc = execute_commandline( cmdl );
-   if ( rc != 0 )
-      std::cout << strerror( rc ) << std::endl;
+   do {                                   // Loop until user exits shell.
+      commandline cmdl;
+      command *first_command;
+      
+      std::string input = request_commandLine( show_prompt );
+      parse_command( input, cmdl );
+      first_command = cmdl.peek_first_command();
+      
+      if ( first_command->args[0] == "exit" ) {
+         show_prompt = false;
+      }
+      else if ( first_command->args[0] == "cd" && first_command->args.size() == 2 ) {
+         std::cout << "not implemented" << std::endl;
+      }
+      else {
+         execute_commandline( cmdl );
+      }
+   } while ( show_prompt );
+//      int rc = execute_commandline( cmdl );
+//      if ( rc != 0 )
+//         std::cout << strerror( rc ) << std::endl;
+//   }
 
    return 0;
 }
