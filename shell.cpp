@@ -187,6 +187,10 @@ namespace shell
 int run_shell( bool show_prompt ) {
    using namespace shell;
 
+   bool loop;
+
+   loop = show_prompt;
+
    do {                                   // Loop until user exits shell.
       commandline cmdl;
       command *first_command;
@@ -196,7 +200,7 @@ int run_shell( bool show_prompt ) {
       first_command = cmdl.peek_first_command();
       
       if ( first_command->args[0] == "exit" ) {
-         show_prompt = false;
+         loop = false;
       }
       else if ( first_command->args[0] == "cd" && first_command->args.size() == 2 ) {
          std::cout << "not implemented" << std::endl;
@@ -204,11 +208,7 @@ int run_shell( bool show_prompt ) {
       else {
          execute_commandline( cmdl );
       }
-   } while ( show_prompt );
-//      int rc = execute_commandline( cmdl );
-//      if ( rc != 0 )
-//         std::cout << strerror( rc ) << std::endl;
-//   }
+   } while ( loop );
 
    return 0;
 }
