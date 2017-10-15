@@ -86,7 +86,10 @@ namespace grammar {
    };
 
    struct exit
-       : keyword< 'e', 'x', 'i', 't' >
+       : seq<
+            keyword< 'e', 'x', 'i', 't' >,
+            opt< whitespace >
+         >
    {
    };
 

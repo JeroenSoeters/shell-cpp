@@ -20,8 +20,17 @@ using namespace shell;
 namespace {
    void Execute( std::string command, std::string expectedOutput );
    void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent );
-   run_commands_action *ParseRunCommandsAction( std::string input );
-   command *ParseSingleCommand( std::string input );
+   exit_action* ParseExitAction( std::string input );
+   run_commands_action* ParseRunCommandsAction( std::string input );
+   command* ParseSingleCommand( std::string input );
+   
+   TEST( Shell, ParseExit ) {
+      exit_action *exit;
+      shell_state state;
+
+      exit = ParseExitAction( "exit" );      // Fails if it didn't parse correctly.
+      exit = ParseExitAction( "exit " );      // Fails if it didn't parse correctly.
+   }
 
    TEST( Shell, ParseSingleCommandWithoutArguments ) {
       command *cmd;
@@ -263,7 +272,21 @@ namespace {
       unlink(expectedOutputLocation.c_str());
    }
 
-   run_commands_action * ParseRunCommandsAction( std::string input ) {
+   exit_action* ParseExitAction( std::string input ) {
+      shell_state state;
+
+      parse_command( input, state );
+
+      if ( exit_action * exit = static_cast< exit_action* >( state.action ) ) {
+         return exit;
+      } 
+      else
+         EXPECT_TRUE( false );
+
+      return NULL;
+   }
+
+   run_commands_action* ParseRunCommandsAction( std::string input ) {
       shell_state state;
 
       parse_command( input, state );
@@ -271,18 +294,13 @@ namespace {
       if ( run_commands_action * run_commands = static_cast< run_commands_action* >( state.action ) ) {
          return run_commands;
       } 
-      else if ( NULL == static_cast< run_commands_action* >( state.action ) ) {
-         std::cout << "null!!\n";
-      }
 
-
-      // force test to fail somehow
       EXPECT_TRUE( false );
 
       return NULL;
    }
 
-   command * ParseSingleCommand( std::string input ) {
+   command* ParseSingleCommand( std::string input ) {
       run_commands_action * run_commands = ParseRunCommandsAction( input );
 
       EXPECT_EQ( 1, run_commands->commands.size() );
