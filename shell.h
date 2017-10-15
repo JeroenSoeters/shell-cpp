@@ -51,7 +51,7 @@ namespace shell
    struct exit_action : shell_action
    {
       int execute() {
-         return 0;
+         exit( EXIT_SUCCESS );
       }
    };
 
