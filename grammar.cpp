@@ -13,27 +13,57 @@ namespace grammar
       };
 
    template<>
+      struct action< exit >
+      {
+         static void apply0( shell::shell_state& state )
+         {
+            state.action = new shell::exit_action;
+         };
+      };
+
+   template<>
+      struct action< change_directory >
+      {
+         template< typename Input >
+            static void apply( const Input& in, shell::shell_state& state )
+            {
+               state.action = new shell::change_directory_action;
+            }
+      };
+
+   template<>
       struct action< arg >
       {
          template< typename Input >
-            static void apply( const Input& in, shell::commandline& cmdl )
+            static void apply( const Input& in, shell::shell_state& state )
             {
-               if ( cmdl.numberOfCommands == 0 ) {
-                  shell::command *cmd = new shell::command;
-                  cmdl.commands.push_back( cmd );
-                  cmdl.numberOfCommands++;
+               shell::run_commands_action * cmdl;
+
+               if ( state.action == 0 ) {
+                  state.action = new shell::run_commands_action;
                }
 
-               cmdl.commands.back()->args.push_back( in.string() );
+               cmdl = static_cast< shell::run_commands_action* >( state.action );
+               
+               if ( cmdl->numberOfCommands == 0 ) {
+                  shell::command *cmd = new shell::command;
+                  cmdl->commands.push_back( cmd );
+                  cmdl->numberOfCommands++;
+               }
+
+               cmdl->commands.back()->args.push_back( in.string() );
             };
       };
 
    template<>
       struct action< background >
       {
-         static void apply0( shell::commandline& cmdl )
+         static void apply0( shell::shell_state& state )
          {
-            cmdl.runInBackground = true;
+            shell::run_commands_action * cmdl;
+
+            cmdl = static_cast< shell::run_commands_action* >( state.action );
+            cmdl->runInBackground = true;
          };
       };
 
@@ -41,9 +71,12 @@ namespace grammar
       struct action< input_file >
       {
          template< typename Input >
-            static void apply( const Input& in, shell::commandline& cmdl )
+            static void apply( const Input& in, shell::shell_state& state )
             {
-               cmdl.commands.back()->input_file = in.string();
+               shell::run_commands_action * cmdl;
+
+               cmdl = static_cast< shell::run_commands_action* >( state.action );
+               cmdl->commands.back()->input_file = in.string();
             };
       };
 
@@ -51,19 +84,25 @@ namespace grammar
       struct action< output_file >
       {
          template< typename Input >
-            static void apply( const Input& in, shell::commandline& cmdl )
+            static void apply( const Input& in, shell::shell_state& state )
             {
-               cmdl.commands.back()->output_file = in.string();
+               shell::run_commands_action * cmdl;
+
+               cmdl = static_cast< shell::run_commands_action* >( state.action );
+               cmdl->commands.back()->output_file = in.string();
             };
       };
 
    template<>
       struct action< pipe >
       {
-         static void apply0( shell::commandline& cmdl )
+         static void apply0( shell::shell_state& state )
          {
-            cmdl.commands.push_back( new shell::command );
-            cmdl.numberOfCommands++;
+            shell::run_commands_action * cmdl;
+
+            cmdl = static_cast< shell::run_commands_action* >( state.action );
+            cmdl->commands.push_back( new shell::command );
+            cmdl->numberOfCommands++;
          };
       };
 }

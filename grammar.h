@@ -45,26 +45,26 @@ namespace grammar {
 
    struct command
       : seq<
-        arg,
-        star< seq< whitespace, arg > >
+           arg,
+           star< seq< whitespace, arg > >
         >
    {
    };
 
    struct redir_stdin
       : seq<
-        one< '<' >,
-        opt< whitespace >,
-        input_file
+           one< '<' >,
+           opt< whitespace >,
+           input_file
         >
    {
    };
 
    struct redir_stdout
       : seq<
-        one< '>' >,
-        opt< whitespace >,
-        output_file
+           one< '>' >,
+           opt< whitespace >,
+           output_file
         >
    {
    };
@@ -85,8 +85,27 @@ namespace grammar {
    {
    };
 
+   struct exit
+       : keyword< 'e', 'x', 'i', 't' >
+   {
+   };
+
+   struct change_directory
+      : seq<
+           keyword< 'c', 'd' >,
+           whitespace,
+           arg
+        >
+   {
+   };
+
+   struct shell_action
+      : sor< exit, change_directory, commandline >
+   {
+   };
+
    struct grammar
-      : must< commandline, eolf >
+      : must< shell_action, eolf >
    {
    };
 }

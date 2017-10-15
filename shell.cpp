@@ -24,10 +24,6 @@ Hint: Ctrl-space to auto complete functions and variables
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <array>
-#include <list>
-#include <experimental/optional>
-#include <vector>
 
 #include <tao/pegtl.hpp>
 
@@ -37,6 +33,7 @@ Hint: Ctrl-space to auto complete functions and variables
 
 namespace shell
 {
+
    char** convert_to_c_args( std::vector< std::string > args ) {
       char** c_args = new char*[args.size()+1];
       for ( int i = 0; i < args.size(); ++i )
@@ -103,7 +100,7 @@ namespace shell
          else if ( cmd->has_file_input() ) {                // First process in the chain, check if input should be read from file.
             read_from_file( cmd->input_file );
          }
-         
+
          if ( has_next_pipe ) {
             write_to_pipe( next_pipe );                     // If there is a next pipe, write to it.
          }
@@ -134,32 +131,6 @@ namespace shell
       return status;
    }
 
-   int execute_commandline( commandline& cmdl ) {
-      std::list < pid_t > pids;
-      std::array< int, 2 > prev_pipe, next_pipe;
-      bool has_prev, has_next;
-      int i;
-      command *cmd;
-
-      for ( i = 0; i < cmdl.numberOfCommands ; i++ ) {      
-         cmd = cmdl.pop_first_command();                    // Pop the first command.
-         has_next = i != cmdl.numberOfCommands - 1;         
-
-         if ( pipe( next_pipe.data() ) < 0 ) {
-            std::exit( EXIT_FAILURE );                      // Pipe failed.
-         }
-
-         pids.push_front( 
-            execute_chained( cmd, has_prev, prev_pipe, has_next, next_pipe ) 
-         );
-    
-         prev_pipe = next_pipe;                             // The output pipe for the current process will be the input pipe for the next process.
-         has_prev = true;
-      }
-
-      return wait_for_process_chain( pids );
-   }
-
    void display_prompt() {
       char buffer[512];
       char* dir = getcwd(buffer, sizeof(buffer));
@@ -178,9 +149,9 @@ namespace shell
       return retval;
    }
 
-   void parse_command( std::string input, commandline& cmdl ) {
+   void parse_command( std::string input, shell_state& state ) {
       grammar::string_input<> in( input, "std::string" );
-      tao::pegtl::parse< grammar::grammar, grammar::action >( in, cmdl );
+      tao::pegtl::parse< grammar::grammar, grammar::action >( in, state );
    }
 }
 
@@ -192,22 +163,24 @@ int run_shell( bool show_prompt ) {
    loop = show_prompt;
 
    do {                                   // Loop until user exits shell.
-      commandline cmdl;
-      command *first_command;
-      
+      shell_state state;
+
       std::string input = request_commandLine( show_prompt );
-      parse_command( input, cmdl );
-      first_command = cmdl.peek_first_command();
+      parse_command( input, state );
+
+      state.action->execute();
+
+//      first_command = cmdl.peek_first_command();
       
-      if ( first_command->args[0] == "exit" ) {
-         loop = false;
-      }
-      else if ( first_command->args[0] == "cd" && first_command->args.size() == 2 ) {
-         std::cout << "not implemented" << std::endl;
-      }
-      else {
-         execute_commandline( cmdl );
-      }
+//      if ( first_command->args[0] == "exit" ) {
+//         loop = false;
+//      }
+//      else if ( first_command->args[0] == "cd" && first_command->args.size() == 2 ) {
+//         std::cout << "not implemented" << std::endl;
+//      }
+//      else {
+//         execute_commandline( cmdl );
+//      }
    } while ( loop );
 
    return 0;

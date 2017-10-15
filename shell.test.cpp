@@ -15,11 +15,12 @@ using namespace shell;
 //#define SHELL "/bin/sh"
 
 // declarations of methods you want to test (should match exactly)
-//void parse_command( std::string input, shell::commandline& cmdl );
+//void ParseRunCommandsAction( std::string input, shell::commandline& cmdl );
 
 namespace {
    void Execute( std::string command, std::string expectedOutput );
    void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent );
+   run_commands_action *ParseRunCommandsAction( std::string input );
    command *ParseSingleCommand( std::string input );
 
    TEST( Shell, ParseSingleCommandWithoutArguments ) {
@@ -61,15 +62,15 @@ namespace {
    }
 
    TEST( Shell, ParseSingleCommandThatRunsInBackground ) {
-      commandline cmdl;
+      run_commands_action * cmdl;
       std::vector<std::string> expected_args;
 
       expected_args = { "foo" };
 
-      parse_command( "foo &", cmdl );
+      cmdl = ParseRunCommandsAction( "foo &" );
 
-      EXPECT_EQ( expected_args, cmdl.commands.front()->args );
-      EXPECT_TRUE( cmdl.runInBackground );
+      EXPECT_EQ( expected_args, cmdl->commands.front()->args );
+      EXPECT_TRUE( cmdl->runInBackground );
    }
 
    TEST( Shell, ParseSingleCommandNoArgumentsWithRedirectStdin ) {
@@ -134,29 +135,29 @@ namespace {
    }
 
    TEST( Shell, ParsePipeline ) {
-      commandline cmdl;
+      run_commands_action * cmdl;
       int expected_number_of_commands;
       std::vector< std::vector< std::string > > expected_args;
 
       expected_number_of_commands = 3;
       expected_args = { { "ls" "-la" }, { "sort" }, { "uniq -i" } };
 
-      parse_command( "ls -la | sort | uniq -l", cmdl );
+      cmdl = ParseRunCommandsAction( "ls -la | sort | uniq -l" );
 
-      EXPECT_EQ( expected_number_of_commands, cmdl.numberOfCommands );
-      EXPECT_FALSE( cmdl.runInBackground );
+      EXPECT_EQ( expected_number_of_commands, cmdl->numberOfCommands );
+      EXPECT_FALSE( cmdl->runInBackground );
    }
 
    TEST( Shell, PipelineThatRunsInBackground ) {
-      commandline cmdl;
+      run_commands_action * cmdl;
 
-      parse_command( "cat < inputfile | sort | uniq &", cmdl );
+      cmdl = ParseRunCommandsAction( "cat < inputfile | sort | uniq &" );
 
-      EXPECT_TRUE( cmdl.runInBackground );
+      EXPECT_TRUE( cmdl->runInBackground );
    }
 
    TEST( Shell, ParsePipelineWithRedirectStdinAndRedirectStdout ) {
-      commandline cmdl;
+      run_commands_action * cmdl;
       int expected_number_of_commands;
       std::vector< std::vector< std::string > > expected_args;
       std::string expected_input_file, expected_output_file;
@@ -166,11 +167,11 @@ namespace {
       expected_input_file = "inputfile";
       expected_output_file = "outputfile";
 
-      parse_command( "ls -la < inputfile | sort | uniq -l > outputfile", cmdl );
+      cmdl = ParseRunCommandsAction( "ls -la < inputfile | sort | uniq -l > outputfile" );
 
-      EXPECT_EQ( expected_number_of_commands, cmdl.numberOfCommands );
-      EXPECT_EQ( expected_input_file, cmdl.commands.front()->input_file );
-      EXPECT_EQ( expected_output_file, cmdl.commands.back()->output_file );
+      EXPECT_EQ( expected_number_of_commands, cmdl->numberOfCommands );
+      EXPECT_EQ( expected_input_file, cmdl->commands.front()->input_file );
+      EXPECT_EQ( expected_output_file, cmdl->commands.back()->output_file );
    }
 
    TEST( Shell, ReadFromFile ) {
@@ -262,13 +263,31 @@ namespace {
       unlink(expectedOutputLocation.c_str());
    }
 
-   command *ParseSingleCommand( std::string input ) {
-      commandline cmdl;
-      parse_command( input, cmdl );
+   run_commands_action * ParseRunCommandsAction( std::string input ) {
+      shell_state state;
 
-      EXPECT_EQ( 1, cmdl.commands.size() );
+      parse_command( input, state );
 
-      return cmdl.commands.front();
+      if ( run_commands_action * run_commands = static_cast< run_commands_action* >( state.action ) ) {
+         return run_commands;
+      } 
+      else if ( NULL == static_cast< run_commands_action* >( state.action ) ) {
+         std::cout << "null!!\n";
+      }
+
+
+      // force test to fail somehow
+      EXPECT_TRUE( false );
+
+      return NULL;
+   }
+
+   command * ParseSingleCommand( std::string input ) {
+      run_commands_action * run_commands = ParseRunCommandsAction( input );
+
+      EXPECT_EQ( 1, run_commands->commands.size() );
+
+      return run_commands->commands.front();
    }
 
 }
