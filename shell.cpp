@@ -135,7 +135,7 @@ namespace shell
       char buffer[512];
       char* dir = getcwd(buffer, sizeof(buffer));
       if (dir)
-         std::cout << "\e[32m" << dir << "\e[39m"; // the strings starting with '\e' are escape codes, that the terminal application interpets in this case as "set color to green"/"set color to default"
+         std::cout << "\e[32m" << dir << "\e[39m";            // the strings starting with '\e' are escape codes, that the terminal application interpets in this case as "set color to green"/"set color to default"
       std::cout << "$ ";
       std::flush(std::cout);
    }
@@ -162,25 +162,15 @@ int run_shell( bool show_prompt ) {
 
    loop = show_prompt;
 
-   do {                                   // Loop until user exits shell.
+   do {                                                       // Loop until user exits shell.
       shell_state state;
 
-      std::string input = request_commandLine( show_prompt );
-      parse_command( input, state );
+      std::string input = request_commandLine( show_prompt ); // Request for input
 
-      state.action->execute();
+      parse_command( input, state );                          // Parse the input into shell_state
 
-//      first_command = cmdl.peek_first_command();
-      
-//      if ( first_command->args[0] == "exit" ) {
-//         loop = false;
-//      }
-//      else if ( first_command->args[0] == "cd" && first_command->args.size() == 2 ) {
-//         std::cout << "not implemented" << std::endl;
-//      }
-//      else {
-//         execute_commandline( cmdl );
-//      }
+      state.action->execute();                                // Execute the action on the state
+
    } while ( loop );
 
    return 0;

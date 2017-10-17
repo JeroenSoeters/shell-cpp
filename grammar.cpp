@@ -13,6 +13,15 @@ namespace grammar
       };
 
    template<>
+      struct action< nop >
+      {
+         static void apply0( shell::shell_state& state ) 
+         {
+            state.action = new shell::nop_action;
+         }
+      };
+
+   template<>
       struct action< exit >
       {
          static void apply0( shell::shell_state& state )

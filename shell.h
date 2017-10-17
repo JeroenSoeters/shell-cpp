@@ -51,6 +51,11 @@ namespace shell
       virtual int execute() = 0;
    };
 
+   struct nop_action : shell_action
+   {
+      int execute() { return 0; }
+   };
+
    struct exit_action : shell_action
    {
       int execute() {
@@ -118,7 +123,9 @@ namespace shell
             has_prev = true;
          }
 
-         return wait_for_process_chain( pids );
+         return runInBackground
+            ? 0
+            : wait_for_process_chain( pids );
       }
    };
 

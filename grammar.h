@@ -18,6 +18,11 @@ namespace grammar {
    {
    };
 
+   struct nop
+      : opt< whitespace >
+   {
+   };
+
    struct exit
       : keyword< 'e', 'x', 'i', 't' >
    {
@@ -86,22 +91,23 @@ namespace grammar {
 
    struct commandline
       : seq<
-        opt< whitespace >,
-        command,
-        opt< whitespace >,
-        opt< redir_stdin >,
-        opt< whitespace >,
-        star< seq< pipe, opt< whitespace >, command, opt< whitespace > > >,
-        opt< redir_stdout >,
-        opt< whitespace >,
-        opt< background >,
-        opt< whitespace >
+           opt< whitespace >,
+           command,
+           opt< whitespace >,
+           opt< redir_stdin >,
+           opt< whitespace >,
+           star< seq< pipe, opt< whitespace >, command, opt< whitespace > > >,
+           opt< redir_stdout >,
+           opt< whitespace >,
+           opt< background >,
+           opt< whitespace >
         >
    {
    };
 
    struct exit_command
        : seq<
+            opt< whitespace >,
             exit,
             opt< whitespace >
          >
@@ -110,6 +116,7 @@ namespace grammar {
 
    struct change_directory_command
       : seq<
+           opt< whitespace >,
            cd,
            whitespace,
            directory,
@@ -120,11 +127,11 @@ namespace grammar {
 
    struct shell_action
       : seq<
-           opt< whitespace >,
            sor< 
               exit_command, 
               change_directory_command, 
-              commandline 
+              commandline,
+              nop
            >
         >
    {

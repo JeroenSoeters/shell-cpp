@@ -20,10 +20,18 @@ using namespace shell;
 namespace {
    void Execute( std::string command, std::string expectedOutput );
    void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent );
-   exit_action* ParseExitAction( std::string input );
+   nop_action*              ParseNopAction( std::string input );
+   exit_action*             ParseExitAction( std::string input );
    change_directory_action* ParseChangeDirectoryAction( std::string input );
-   run_commands_action* ParseRunCommandsAction( std::string input );
-   command* ParseSingleCommand( std::string input );
+   run_commands_action*     ParseRunCommandsAction( std::string input );
+   command*                 ParseSingleCommand( std::string input );
+
+   TEST( Shell, ParseNop ) {
+      nop_action *nop;
+
+      nop = ParseNopAction( " " );
+//      nop = ParseNopAction( "    " );
+   }
    
    TEST( Shell, ParseExit ) {
       exit_action *exit;
@@ -240,6 +248,10 @@ namespace {
       Execute("ls -1 | head -n 2 | tail -n 1", "2\n");
    }
 
+   TEST( Shell, ExecuteInBackground ) {
+      Execute( "ls &", "" );
+   }
+
    TEST( Shell, ChangeDirectory ) {
       system( "mkdir ../test-dir/nested" );
       Execute( "cd nested", "" );
@@ -310,6 +322,20 @@ namespace {
       unlink(expectedOutputLocation.c_str());
    }
 
+   nop_action* ParseNopAction( std::string input ) {
+      shell_state state;
+
+      parse_command( input, state );
+
+      if ( nop_action * nop = static_cast< nop_action* >( state.action ) ) {
+         return nop;
+      } 
+      else
+         EXPECT_TRUE( false );
+
+      return NULL;
+   }
+
    exit_action* ParseExitAction( std::string input ) {
       shell_state state;
 
@@ -359,5 +385,4 @@ namespace {
 
       return run_commands->commands.front();
    }
-
 }
