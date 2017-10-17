@@ -30,7 +30,7 @@ namespace {
       nop_action *nop;
 
       nop = ParseNopAction( " " );
-//      nop = ParseNopAction( "    " );
+      nop = ParseNopAction( "    " );
    }
    
    TEST( Shell, ParseExit ) {
