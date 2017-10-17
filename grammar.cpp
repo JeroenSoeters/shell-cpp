@@ -22,12 +22,24 @@ namespace grammar
       };
 
    template<>
-      struct action< change_directory >
+      struct action< cd >
+      {
+         static void apply0( shell::shell_state& state )
+         {
+            state.action = new shell::change_directory_action;
+         };
+      };
+
+   template<>
+      struct action< directory >
       {
          template< typename Input >
             static void apply( const Input& in, shell::shell_state& state )
             {
-               state.action = new shell::change_directory_action;
+               shell::change_directory_action * chdir;
+               
+               chdir = static_cast< shell::change_directory_action* >( state.action );
+               chdir->new_directory = in.string();
             }
       };
 

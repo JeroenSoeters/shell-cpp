@@ -18,6 +18,21 @@ namespace grammar {
    {
    };
 
+   struct exit
+      : keyword< 'e', 'x', 'i', 't' >
+   {
+   };
+
+   struct cd
+      : keyword< 'c', 'd' >
+   {
+   };
+
+   struct directory
+      : part
+   {
+   };
+
    struct arg
       : part
    {
@@ -85,25 +100,33 @@ namespace grammar {
    {
    };
 
-   struct exit
+   struct exit_command
        : seq<
-            keyword< 'e', 'x', 'i', 't' >,
+            exit,
             opt< whitespace >
          >
    {
    };
 
-   struct change_directory
+   struct change_directory_command
       : seq<
-           keyword< 'c', 'd' >,
+           cd,
            whitespace,
-           arg
+           directory,
+           opt< whitespace >
         >
    {
    };
 
    struct shell_action
-      : sor< exit, change_directory, commandline >
+      : seq<
+           opt< whitespace >,
+           sor< 
+              exit_command, 
+              change_directory_command, 
+              commandline 
+           >
+        >
    {
    };
 

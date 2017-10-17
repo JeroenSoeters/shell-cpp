@@ -21,15 +21,44 @@ namespace {
    void Execute( std::string command, std::string expectedOutput );
    void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent );
    exit_action* ParseExitAction( std::string input );
+   change_directory_action* ParseChangeDirectoryAction( std::string input );
    run_commands_action* ParseRunCommandsAction( std::string input );
    command* ParseSingleCommand( std::string input );
    
    TEST( Shell, ParseExit ) {
       exit_action *exit;
-      shell_state state;
 
       exit = ParseExitAction( "exit" );      // Fails if it didn't parse correctly.
       exit = ParseExitAction( "exit " );      // Fails if it didn't parse correctly.
+   }
+
+   TEST( Shell, ParseChangeDirectory ) {
+      change_directory_action *chdir;
+      std::string expected_dir;
+
+      expected_dir = "tmp";
+
+      chdir = ParseChangeDirectoryAction("cd tmp");
+
+      EXPECT_EQ( expected_dir, chdir->new_directory );
+
+      expected_dir = "tmp";
+
+      chdir = ParseChangeDirectoryAction("cd tmp ");
+
+      EXPECT_EQ( expected_dir, chdir->new_directory );
+
+      expected_dir = "tmp";
+
+      chdir = ParseChangeDirectoryAction(" cd tmp");
+
+      EXPECT_EQ( expected_dir, chdir->new_directory );
+
+      expected_dir = "..";
+
+      chdir = ParseChangeDirectoryAction("cd ..");
+
+      EXPECT_EQ( expected_dir, chdir->new_directory );
    }
 
    TEST( Shell, ParseSingleCommandWithoutArguments ) {
@@ -211,6 +240,15 @@ namespace {
       Execute("ls -1 | head -n 2 | tail -n 1", "2\n");
    }
 
+   TEST( Shell, ChangeDirectory ) {
+      system( "mkdir ../test-dir/nested" );
+      Execute( "cd nested", "" );
+      system( "rm -rf ../test-dir/nested" );
+
+      Execute("cd this-directory-doesnt-exist", "No such file or directory");
+   }
+
+
    //////////////// HELPERS
 
    std::string filecontents(const std::string& str) {
@@ -279,6 +317,20 @@ namespace {
 
       if ( exit_action * exit = static_cast< exit_action* >( state.action ) ) {
          return exit;
+      } 
+      else
+         EXPECT_TRUE( false );
+
+      return NULL;
+   }
+
+   change_directory_action* ParseChangeDirectoryAction( std::string input ) {
+      shell_state state;
+
+      parse_command( input, state );
+
+      if ( change_directory_action * change_dir = static_cast< change_directory_action* >( state.action ) ) {
+         return change_dir;
       } 
       else
          EXPECT_TRUE( false );

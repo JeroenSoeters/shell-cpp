@@ -4,6 +4,9 @@
 #include <array>
 #include <list>
 #include <vector>
+#include <unistd.h>
+
+#include <iostream>
 
 namespace shell 
 {
@@ -57,8 +60,20 @@ namespace shell
 
    struct change_directory_action : shell_action
    {
+      std::string new_directory;
+
       int execute() {
-         return 0;
+         int rc = chdir( new_directory.c_str() );
+         if ( rc != 0 ) {
+            switch ( errno ) {
+               case ENOENT:
+                  std::cout << "No such file or directory";
+                  break;
+               default:
+                  std::cout << "Unknown error";
+            }
+         }
+         return rc;
       }
    };
 
