@@ -89,7 +89,7 @@ namespace grammar {
    {
    };
 
-   struct commandline
+   struct run_commands
       : seq<
            opt< whitespace >,
            command,
@@ -130,7 +130,7 @@ namespace grammar {
            sor< 
               exit_command, 
               change_directory_command, 
-              commandline,
+              run_commands,
               nop
            >
         >
