@@ -33,6 +33,17 @@ Hint: Ctrl-space to auto complete functions and variables
 
 namespace shell
 {
+   NopAction::NopAction() noexcept { }
+   int NopAction::execute() noexcept { return 0; }
+
+   ExitAction::ExitAction() noexcept { }
+   int ExitAction::execute() noexcept { return 0; }
+
+   ChangeDirectoryAction::ChangeDirectoryAction() noexcept { }
+   int ChangeDirectoryAction::execute() noexcept { return 0; }
+   
+   RunCommandsAction::RunCommandsAction() noexcept { }
+   int RunCommandsAction::execute() noexcept { return 0; }
 
    char** convert_to_c_args( std::vector< std::string > args ) {
       char** c_args = new char*[args.size()+1];

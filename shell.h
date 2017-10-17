@@ -32,6 +32,40 @@ namespace shell
 
    extern int wait_for_process_chain( std::list< pid_t > pids );
 
+   class ShellAction
+   {
+   public:
+      virtual int execute() = 0;
+   };
+
+   class NopAction: ShellAction
+   {
+   public:
+      NopAction() noexcept;
+      int execute() noexcept;
+   };
+
+   class ExitAction: ShellAction
+   {
+   public:
+      ExitAction() noexcept;
+      int execute() noexcept;
+   };
+
+   class ChangeDirectoryAction: ShellAction
+   {
+   public:
+      ChangeDirectoryAction() noexcept;
+      int execute() noexcept;
+   };
+
+   class RunCommandsAction: ShellAction
+   {
+   public:
+      RunCommandsAction() noexcept;
+      int execute() noexcept;
+   };
+
    struct command
    {
       std::vector< std::string > args;
