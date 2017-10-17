@@ -72,10 +72,10 @@ namespace shell
          if ( rc != 0 ) {
             switch ( errno ) {
                case ENOENT:
-                  std::cout << "No such file or directory";
+                  std::cerr << "No such file or directory";
                   break;
                default:
-                  std::cout << "Unknown error";
+                  std::cerr << "Unknown error";
             }
          }
          return rc;

@@ -51,10 +51,19 @@ namespace shell
 
    void overlayProcess( std::vector< std::string > args ) {
       char** c_args = convert_to_c_args( args );
+
       execvp( c_args[0], c_args );
 
       // there must be an error if we get to here
       free_c_args( c_args, args.size() );
+
+      switch ( errno ) {
+         case ENOENT:
+            std::cerr << "command not found\n";
+            break;
+         default:
+            std::cerr << "unknown error\n";
+      }
 
       std::exit( EXIT_FAILURE );
    }

@@ -19,6 +19,7 @@ using namespace shell;
 
 namespace {
    void Execute( std::string command, std::string expectedOutput );
+   void Execute( std::string command, std::string expectedOutput, std::string expectedErrors );
    void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent );
    nop_action*              ParseNopAction( std::string input );
    exit_action*             ParseExitAction( std::string input );
@@ -248,16 +249,21 @@ namespace {
       Execute("ls -1 | head -n 2 | tail -n 1", "2\n");
    }
 
+   TEST( Shell, ExecuteChainedWithErrors ) {
+      Execute( "program-that-doesnt-exist | program-that-doesnt-exist | ls", "1\n2\n3\n4\n", "command not found\ncommand not found\n" );
+   }
+
+
    TEST( Shell, ExecuteInBackground ) {
       Execute( "ls &", "" );
    }
 
    TEST( Shell, ChangeDirectory ) {
       system( "mkdir ../test-dir/nested" );
-      Execute( "cd nested", "" );
+      Execute( "cd nested", "", "" );
       system( "rm -rf ../test-dir/nested" );
 
-      Execute("cd this-directory-doesnt-exist", "No such file or directory");
+      Execute( "cd this-directory-doesnt-exist", "", "No such file or directory" );
    }
 
 
@@ -302,14 +308,23 @@ namespace {
       close(fd);
    }
 
-   void Execute(std::string command, std::string expectedOutput) {
-      filewrite("input", command);
-      system("cd ../test-dir; " SHELL " < ../build/input > ../build/output 2> /dev/null");
-      std::string got = filecontents("output");
-      EXPECT_EQ(expectedOutput, got);
+   void Execute( std::string command, std::string expectedOutput ) {
+      filewrite( "input", command );
+      system( "cd ../test-dir; " SHELL " < ../build/input > ../build/output 2> /dev/null" );
+      std::string got = filecontents( "output" );
+      EXPECT_EQ( expectedOutput, got );
    }
 
-   void Execute(std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent) {
+   void Execute( std::string command, std::string expectedOutput, std::string expectedErrors ) {
+      filewrite( "input", command );
+      system( "cd ../test-dir; " SHELL " < ../build/input > ../build/output 2> ../build/errors" );
+      std::string got = filecontents( "output" );
+      EXPECT_EQ( expectedOutput, got );
+      std::string errors = filecontents( "errors" );
+      EXPECT_EQ( expectedErrors, errors );
+   }
+
+   void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent ) {
       std::string expectedOutputLocation = "../test-dir/" + expectedOutputFile;
       unlink(expectedOutputLocation.c_str());
       filewrite("input", command);
