@@ -122,25 +122,6 @@ namespace shell
       }
    };
 
-   struct commandline
-   {
-      int numberOfCommands = 0;
-      std::list< command* > commands;
-
-      bool runInBackground = false;
-
-      command *peek_first_command() {
-         return commands.front();
-      }
-
-      command *pop_first_command() {
-         command *first = commands.front();
-         commands.pop_front();
-
-         return first;
-      }
-   };
-
    struct shell_state
    {
       shell_action *action = 0;
