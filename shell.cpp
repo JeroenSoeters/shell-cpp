@@ -153,25 +153,25 @@ namespace shell
       grammar::string_input<> in( input, "std::string" );
       tao::pegtl::parse< grammar::grammar, grammar::action >( in, state );
    }
-}
 
-int run_shell( bool show_prompt ) {
-   using namespace shell;
+   int run_shell( bool show_prompt ) {
+      using namespace shell;
 
-   bool loop;
+      bool loop;
 
-   loop = show_prompt;
+      loop = show_prompt;
 
-   do {                                                       // Loop until user exits shell.
-      shell_state state;
+      do {                                                       // Loop until user exits shell.
+         shell_state state;
 
-      std::string input = request_commandLine( show_prompt ); // Request for input
+         std::string input = request_commandLine( show_prompt ); // Request for input
 
-      parse_command( input, state );                          // Parse the input into shell_state
+         parse_command( input, state );                          // Parse the input into shell_state
 
-      state.action->execute();                                // Execute the action on the state
+         state.action->execute();                                // Execute the action on the state
 
-   } while ( loop );
+      } while ( loop );
 
-   return 0;
+      return 0;
+   }
 }
