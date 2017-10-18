@@ -6,6 +6,8 @@
 // Actions that are applied when parsing rules succeed.
 namespace grammar
 {
+   using namespace shell;
+
    template< typename Rule >
       struct action
       : nothing< Rule >
@@ -17,7 +19,7 @@ namespace grammar
       {
          static void apply0( shell::shell_state& state ) 
          {
-            state.action = new shell::nop_action;
+            state.action = new NopAction();
          }
       };
 
@@ -26,16 +28,7 @@ namespace grammar
       {
          static void apply0( shell::shell_state& state )
          {
-            state.action = new shell::exit_action;
-         };
-      };
-
-   template<>
-      struct action< cd >
-      {
-         static void apply0( shell::shell_state& state )
-         {
-            state.action = new shell::change_directory_action;
+            state.action = new ExitAction();
          };
       };
 
@@ -45,10 +38,7 @@ namespace grammar
          template< typename Input >
             static void apply( const Input& in, shell::shell_state& state )
             {
-               shell::change_directory_action * chdir;
-               
-               chdir = static_cast< shell::change_directory_action* >( state.action );
-               chdir->new_directory = in.string();
+               state.action = new ChangeDirectoryAction( in.string() );
             }
       };
 
@@ -58,13 +48,13 @@ namespace grammar
          template< typename Input >
             static void apply( const Input& in, shell::shell_state& state )
             {
-               shell::run_commands_action * cmdl;
+               RunCommandsAction * cmdl;
 
                if ( state.action == 0 ) {
-                  state.action = new shell::run_commands_action;
+                  state.action = new RunCommandsAction();
                }
 
-               cmdl = static_cast< shell::run_commands_action* >( state.action );
+               cmdl = static_cast< RunCommandsAction* >( state.action );
                
                if ( cmdl->numberOfCommands == 0 ) {
                   shell::command *cmd = new shell::command;
@@ -81,9 +71,9 @@ namespace grammar
       {
          static void apply0( shell::shell_state& state )
          {
-            shell::run_commands_action * cmdl;
+            RunCommandsAction * cmdl;
 
-            cmdl = static_cast< shell::run_commands_action* >( state.action );
+            cmdl = static_cast< RunCommandsAction* >( state.action );
             cmdl->runInBackground = true;
          };
       };
@@ -94,9 +84,9 @@ namespace grammar
          template< typename Input >
             static void apply( const Input& in, shell::shell_state& state )
             {
-               shell::run_commands_action * cmdl;
+               RunCommandsAction * cmdl;
 
-               cmdl = static_cast< shell::run_commands_action* >( state.action );
+               cmdl = static_cast< RunCommandsAction* >( state.action );
                cmdl->commands.back()->input_file = in.string();
             };
       };
@@ -107,9 +97,9 @@ namespace grammar
          template< typename Input >
             static void apply( const Input& in, shell::shell_state& state )
             {
-               shell::run_commands_action * cmdl;
+               RunCommandsAction * cmdl;
 
-               cmdl = static_cast< shell::run_commands_action* >( state.action );
+               cmdl = static_cast< RunCommandsAction* >( state.action );
                cmdl->commands.back()->output_file = in.string();
             };
       };
@@ -119,13 +109,11 @@ namespace grammar
       {
          static void apply0( shell::shell_state& state )
          {
-            shell::run_commands_action * cmdl;
+            RunCommandsAction * cmdl;
 
-            cmdl = static_cast< shell::run_commands_action* >( state.action );
+            cmdl = static_cast< RunCommandsAction* >( state.action );
             cmdl->commands.push_back( new shell::command );
             cmdl->numberOfCommands++;
          };
       };
 }
-
-

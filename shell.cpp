@@ -37,15 +37,33 @@ namespace shell
    int NopAction::execute() noexcept { return 0; }
 
    ExitAction::ExitAction() noexcept { }
-   int ExitAction::execute() noexcept { return 0; }
+   int ExitAction::execute() noexcept 
+   {
+      exit( EXIT_SUCCESS );
+   }
 
-   ChangeDirectoryAction::ChangeDirectoryAction() noexcept { }
-   int ChangeDirectoryAction::execute() noexcept { return 0; }
+   ChangeDirectoryAction::ChangeDirectoryAction( std::string directory ) noexcept 
+   {
+      new_directory = directory;
+   }
+   int ChangeDirectoryAction::execute() noexcept 
+   {
+      int rc = chdir( new_directory.c_str() );
+      if ( rc != 0 ) {
+         switch ( errno ) {
+            case ENOENT:
+               std::cerr << "No such file or directory";
+               break;
+            default:
+               std::cerr << "Unknown error";
+         }
+      }
+      return rc;
+   }
    
    RunCommandsAction::RunCommandsAction() noexcept { }
-   int RunCommandsAction::execute() noexcept { return 0; }
-
-   char** convert_to_c_args( std::vector< std::string > args ) {
+   char** RunCommandsAction::convert_to_c_args( std::vector< std::string > args ) noexcept 
+   {
       char** c_args = new char*[args.size()+1];
       for ( int i = 0; i < args.size(); ++i )
          c_args[i] = strdup( args[i].c_str() );
@@ -53,21 +71,18 @@ namespace shell
 
       return c_args;
    }
-
-   void free_c_args( char** c_args, int number_of_c_args ) {
+   void RunCommandsAction::free_c_args( char** c_args, int number_of_c_args ) noexcept 
+   {
       for (int i = 0; i < number_of_c_args; ++i)
          free( c_args[i] );
       delete[] c_args;
    }
-
-   void overlayProcess( std::vector< std::string > args ) {
+   void RunCommandsAction::overlayProcess( std::vector< std::string > args ) noexcept 
+   {
       char** c_args = convert_to_c_args( args );
-
       execvp( c_args[0], c_args );
-
       // there must be an error if we get to here
       free_c_args( c_args, args.size() );
-
       switch ( errno ) {
          case ENOENT:
             std::cerr << "command not found\n";
@@ -75,39 +90,38 @@ namespace shell
          default:
             std::cerr << "unknown error\n";
       }
-
       std::exit( EXIT_FAILURE );
    }
-
-   void read_from_file( std::string input_file ) {
+   void RunCommandsAction::read_from_file( std::string input_file ) noexcept 
+   {
       int fd = open( input_file.c_str(), O_RDONLY, S_IRUSR );
       close( STDIN_FILENO );
       dup( fd );
    }
-
-   void write_to_file( std::string output_file ) { 
+   void RunCommandsAction::write_to_file( std::string output_file ) noexcept 
+   { 
       int fd = open( output_file.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR );
       close( STDOUT_FILENO );
       dup( fd );
    }
-
-   void read_from_pipe( std::array< int, 2 > pipe ) {
+   void RunCommandsAction::read_from_pipe( std::array< int, 2 > pipe ) noexcept 
+   {
       dup2( pipe[0], 0 );
       close( pipe[1] );
    }
-
-   void write_to_pipe( std::array< int, 2 > pipe ) {
+   void RunCommandsAction::write_to_pipe( std::array< int, 2 > pipe ) noexcept 
+   {
       close( pipe[0] );
       dup2( pipe[1], 1 );
    }
-
-   void close_pipe( std::array< int, 2 > pipe ) {
+   void RunCommandsAction::close_pipe( std::array< int, 2 > pipe ) noexcept 
+   {
       close( pipe[0] );
       close( pipe[1] );
    }
-
    // Thiss would have been nicer with std::optional which doesn't compile on MacOSX.
-   pid_t execute_chained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) {
+   pid_t RunCommandsAction::execute_chained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) noexcept 
+   {
       pid_t pid;
 
       if ( (pid = fork()) < 0 ) {
@@ -138,8 +152,8 @@ namespace shell
 
       return pid;
    }
-
-   int wait_for_process_chain( std::list< pid_t > pids ) {
+   int RunCommandsAction::wait_for_process_chain( std::list< pid_t > pids ) noexcept 
+   {
       int status;
 
       while ( pids.size() > 1 ) {
@@ -149,6 +163,46 @@ namespace shell
       waitpid( pids.front(), &status, WUNTRACED );
 
       return status;
+   }
+   command* RunCommandsAction::peek_first_command() noexcept
+   {
+      return commands.front();
+   }
+
+   command* RunCommandsAction::pop_first_command() noexcept
+   {
+      command *first = commands.front();
+      commands.pop_front();
+
+      return first;
+   }
+   int RunCommandsAction::execute() noexcept
+   {
+      std::list < pid_t > pids;
+      std::array< int, 2 > prev_pipe, next_pipe;
+      bool has_prev, has_next;
+      int i;
+      command *cmd;
+
+      for ( i = 0; i < numberOfCommands ; i++ ) {      
+         cmd = pop_first_command();                    // Pop the first command.
+         has_next = i != numberOfCommands - 1;         
+
+         if ( pipe( next_pipe.data() ) < 0 ) {
+            std::exit( EXIT_FAILURE );                      // Pipe failed.
+         }
+
+         pids.push_front( 
+               execute_chained( cmd, has_prev, prev_pipe, has_next, next_pipe ) 
+               );
+
+         prev_pipe = next_pipe;                             // The output pipe for the current process will be the input pipe for the next process.
+         has_prev = true;
+      }
+
+      return runInBackground
+         ? 0
+         : wait_for_process_chain( pids );
    }
 
    void display_prompt() {

@@ -21,28 +21,28 @@ namespace {
    void Execute( std::string command, std::string expectedOutput );
    void Execute( std::string command, std::string expectedOutput, std::string expectedErrors );
    void Execute( std::string command, std::string expectedOutput, std::string expectedOutputFile, std::string expectedOutputFileContent );
-   nop_action*              ParseNopAction( std::string input );
-   exit_action*             ParseExitAction( std::string input );
-   change_directory_action* ParseChangeDirectoryAction( std::string input );
-   run_commands_action*     ParseRunCommandsAction( std::string input );
+   NopAction*              ParseNopAction( std::string input );
+   ExitAction*             ParseExitAction( std::string input );
+   ChangeDirectoryAction* ParseChangeDirectoryAction( std::string input );
+   RunCommandsAction*     ParseRunCommandsAction( std::string input );
    command*                 ParseSingleCommand( std::string input );
 
    TEST( Shell, ParseNop ) {
-      nop_action *nop;
+      NopAction *nop;
 
       nop = ParseNopAction( " " );
       nop = ParseNopAction( "    " );
    }
    
    TEST( Shell, ParseExit ) {
-      exit_action *exit;
+      ExitAction *exit;
 
       exit = ParseExitAction( "exit" );      // Fails if it didn't parse correctly.
       exit = ParseExitAction( "exit " );      // Fails if it didn't parse correctly.
    }
 
    TEST( Shell, ParseChangeDirectory ) {
-      change_directory_action *chdir;
+      ChangeDirectoryAction *chdir;
       std::string expected_dir;
 
       expected_dir = "tmp";
@@ -109,7 +109,7 @@ namespace {
    }
 
    TEST( Shell, ParseSingleCommandThatRunsInBackground ) {
-      run_commands_action * cmdl;
+      RunCommandsAction * cmdl;
       std::vector<std::string> expected_args;
 
       expected_args = { "foo" };
@@ -182,7 +182,7 @@ namespace {
    }
 
    TEST( Shell, ParsePipeline ) {
-      run_commands_action * cmdl;
+      RunCommandsAction * cmdl;
       int expected_number_of_commands;
       std::vector< std::vector< std::string > > expected_args;
 
@@ -196,7 +196,7 @@ namespace {
    }
 
    TEST( Shell, PipelineThatRunsInBackground ) {
-      run_commands_action * cmdl;
+      RunCommandsAction * cmdl;
 
       cmdl = ParseRunCommandsAction( "cat < inputfile | sort | uniq &" );
 
@@ -204,7 +204,7 @@ namespace {
    }
 
    TEST( Shell, ParsePipelineWithRedirectStdinAndRedirectStdout ) {
-      run_commands_action * cmdl;
+      RunCommandsAction * cmdl;
       int expected_number_of_commands;
       std::vector< std::vector< std::string > > expected_args;
       std::string expected_input_file, expected_output_file;
@@ -337,12 +337,12 @@ namespace {
       unlink(expectedOutputLocation.c_str());
    }
 
-   nop_action* ParseNopAction( std::string input ) {
+   NopAction* ParseNopAction( std::string input ) {
       shell_state state;
 
       parse_command( input, state );
 
-      if ( nop_action * nop = static_cast< nop_action* >( state.action ) ) {
+      if ( NopAction * nop = static_cast< NopAction* >( state.action ) ) {
          return nop;
       } 
       else
@@ -351,12 +351,12 @@ namespace {
       return NULL;
    }
 
-   exit_action* ParseExitAction( std::string input ) {
+   ExitAction* ParseExitAction( std::string input ) {
       shell_state state;
 
       parse_command( input, state );
 
-      if ( exit_action * exit = static_cast< exit_action* >( state.action ) ) {
+      if ( ExitAction * exit = static_cast< ExitAction* >( state.action ) ) {
          return exit;
       } 
       else
@@ -365,12 +365,12 @@ namespace {
       return NULL;
    }
 
-   change_directory_action* ParseChangeDirectoryAction( std::string input ) {
+   ChangeDirectoryAction* ParseChangeDirectoryAction( std::string input ) {
       shell_state state;
 
       parse_command( input, state );
 
-      if ( change_directory_action * change_dir = static_cast< change_directory_action* >( state.action ) ) {
+      if ( ChangeDirectoryAction * change_dir = static_cast< ChangeDirectoryAction* >( state.action ) ) {
          return change_dir;
       } 
       else
@@ -379,12 +379,12 @@ namespace {
       return NULL;
    }
 
-   run_commands_action* ParseRunCommandsAction( std::string input ) {
+   RunCommandsAction* ParseRunCommandsAction( std::string input ) {
       shell_state state;
 
       parse_command( input, state );
 
-      if ( run_commands_action * run_commands = static_cast< run_commands_action* >( state.action ) ) {
+      if ( RunCommandsAction * run_commands = static_cast< RunCommandsAction* >( state.action ) ) {
          return run_commands;
       } 
 
@@ -394,7 +394,7 @@ namespace {
    }
 
    command* ParseSingleCommand( std::string input ) {
-      run_commands_action * run_commands = ParseRunCommandsAction( input );
+      RunCommandsAction * run_commands = ParseRunCommandsAction( input );
 
       EXPECT_EQ( 1, run_commands->commands.size() );
 
