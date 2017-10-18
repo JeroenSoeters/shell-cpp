@@ -10,7 +10,19 @@
 
 namespace shell 
 {
-   struct command;
+   struct command
+   {
+      std::vector< std::string > args;
+      std::string input_file, output_file;
+
+      bool has_file_input() {
+         return input_file != "";
+      }
+
+      bool has_file_output() {
+         return output_file != "";
+      }
+   };
 
    class ShellAction
    {
@@ -61,20 +73,6 @@ namespace shell
       int execute() noexcept;
       command *peek_first_command() noexcept;
       command *pop_first_command() noexcept;
-   };
-
-   struct command
-   {
-      std::vector< std::string > args;
-      std::string input_file, output_file;
-
-      bool has_file_input() {
-         return input_file != "";
-      }
-
-      bool has_file_output() {
-         return output_file != "";
-      }
    };
 
    struct shell_state

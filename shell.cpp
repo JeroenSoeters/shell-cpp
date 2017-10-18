@@ -119,7 +119,7 @@ namespace shell
       close( pipe[0] );
       close( pipe[1] );
    }
-   // Thiss would have been nicer with std::optional which doesn't compile on MacOSX.
+   // This would have been nicer with std::optional (C++17) which doesn't compile on MacOSX.
    pid_t RunCommandsAction::execute_chained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) noexcept 
    {
       pid_t pid;
