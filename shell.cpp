@@ -248,10 +248,15 @@ namespace shell
 
          std::string input = request_commandLine( show_prompt ); // Request for input
 
-         parse_command( input, state );                          // Parse the input into shell_state
-
-         state.action->execute();                                // Execute the action on the state
-
+         try
+         {
+            parse_command( input, state );                       // Parse the input into shell_state
+            state.action->execute();                             // Execute the action on the state
+         }
+         catch ( std::exception& e )
+         {
+            std::cerr << "command not found" << std::endl;
+         }
       } while ( loop );
 
       return 0;

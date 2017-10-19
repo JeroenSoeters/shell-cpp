@@ -251,6 +251,10 @@ namespace {
       execute( "cd this-directory-doesnt-exist", "", "No such file or directory" );
    }
 
+   TEST( Shell, ParseError ) {
+      execute( "!", "", "command not found\n");
+   }
+
 
    //////////////// HELPERS
 
