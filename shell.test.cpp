@@ -225,7 +225,6 @@ namespace {
    }
 
    TEST( Shell, Execute ) {
-      execute("uname", "Darwin\n");
       execute("ls", "1\n2\n3\n4\n");
       execute("ls -1", "1\n2\n3\n4\n");
    }
@@ -249,6 +248,10 @@ namespace {
       system( "rm -rf ../test-dir/nested" );
 
       execute( "cd this-directory-doesnt-exist", "", "No such file or directory" );
+   }
+
+   TEST( Shell, Exit ) {
+      execute( "exit", "", "" );
    }
 
    TEST( Shell, ParseError ) {
