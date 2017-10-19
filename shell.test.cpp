@@ -12,10 +12,6 @@ using namespace shell;
 
 // shell to run tests on
 #define SHELL "../build/shell -t"
-//#define SHELL "/bin/sh"
-
-// declarations of methods you want to test (should match exactly)
-//void ParseRunCommandsAction( std::string input, shell::commandline& cmdl );
 
 namespace {
    void execute( std::string command, std::string expectedOutput );
