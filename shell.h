@@ -14,14 +14,6 @@ namespace shell
    {
       std::vector< std::string > args;
       std::string input_file, output_file;
-
-      bool has_file_input() {
-         return input_file != "";
-      }
-
-      bool has_file_output() {
-         return output_file != "";
-      }
    };
 
    class ShellAction
@@ -65,6 +57,8 @@ namespace shell
       void close_pipe( std::array< int, 2 > pipe ) noexcept;
       pid_t execute_chained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) noexcept;
       int wait_for_process_chain( std::list< pid_t > pids ) noexcept;
+      bool has_file_input( command * cmd ) noexcept;
+      bool has_file_output( command * cmd ) noexcept;
    public:
       int numberOfCommands = 0;
       std::list< command* > commands;

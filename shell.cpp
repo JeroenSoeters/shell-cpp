@@ -119,6 +119,14 @@ namespace shell
       close( pipe[0] );
       close( pipe[1] );
    }
+   bool RunCommandsAction::has_file_input( command * cmd ) noexcept
+   {
+      return cmd->input_file != "";
+   }
+   bool RunCommandsAction::has_file_output( command * cmd ) noexcept 
+   {
+      return cmd->output_file != "";
+   }
    // This would have been nicer with std::optional (C++17) which doesn't compile on MacOSX.
    pid_t RunCommandsAction::execute_chained( command* cmd, bool has_prev_pipe, std::array< int, 2 > prev_pipe, bool has_next_pipe, std::array< int, 2 > next_pipe ) noexcept 
    {
@@ -131,14 +139,14 @@ namespace shell
          if ( has_prev_pipe ) {                             // If there is a previous pipe, read from it.
             read_from_pipe( prev_pipe );
          } 
-         else if ( cmd->has_file_input() ) {                // First process in the chain, check if input should be read from file.
+         else if ( has_file_input( cmd ) ) {                // First process in the chain, check if input should be read from file.
             read_from_file( cmd->input_file );
          }
 
          if ( has_next_pipe ) {
             write_to_pipe( next_pipe );                     // If there is a next pipe, write to it.
          }
-         else if ( cmd->has_file_output() ) {               // Last process in the chain, check if output should be written to file.
+         else if ( has_file_output( cmd ) ) {               // Last process in the chain, check if output should be written to file.
             write_to_file( cmd->output_file );
          }
 
