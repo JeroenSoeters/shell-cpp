@@ -185,18 +185,18 @@ namespace shell
       command *cmd;
 
       for ( i = 0; i < numberOfCommands ; i++ ) {      
-         cmd = pop_first_command();                    // Pop the first command.
+         cmd = pop_first_command();                           // Pop the first command.
          has_next = i != numberOfCommands - 1;         
 
          if ( pipe( next_pipe.data() ) < 0 ) {
-            std::exit( EXIT_FAILURE );                      // Pipe failed.
+            std::exit( EXIT_FAILURE );                        // Pipe failed.
          }
 
          pids.push_front( 
                execute_chained( cmd, has_prev, prev_pipe, has_next, next_pipe ) 
                );
 
-         prev_pipe = next_pipe;                             // The output pipe for the current process will be the input pipe for the next process.
+         prev_pipe = next_pipe;                               // The output pipe for the current process will be the input pipe for the next process.
          has_prev = true;
       }
 
@@ -235,7 +235,7 @@ namespace shell
 
       loop = show_prompt;
 
-      do {                                                       // Loop until user exits shell.
+      do {                                                     
          shell_state state;
 
          std::string input = request_commandLine( show_prompt ); // Request for input

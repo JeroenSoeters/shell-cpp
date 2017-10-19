@@ -13,22 +13,27 @@ namespace grammar {
    {
    };
 
+   struct optional_whitespace
+      : opt< whitespace >
+   {
+   };
+
    struct part
       : plus< sor < alnum, one< '_' >, one< '-' >, one< '/' >, one< '.' > > >
    {
    };
 
    struct nop
-      : opt< whitespace >
+      : optional_whitespace
    {
    };
 
-   struct exit
+   struct exit_keyword
       : keyword< 'e', 'x', 'i', 't' >
    {
    };
 
-   struct cd
+   struct cd_keyword
       : keyword< 'c', 'd' >
    {
    };
@@ -74,7 +79,7 @@ namespace grammar {
    struct redir_stdin
       : seq<
            one< '<' >,
-           opt< whitespace >,
+           optional_whitespace,
            input_file
         >
    {
@@ -83,7 +88,7 @@ namespace grammar {
    struct redir_stdout
       : seq<
            one< '>' >,
-           opt< whitespace >,
+           optional_whitespace,
            output_file
         >
    {
@@ -91,36 +96,36 @@ namespace grammar {
 
    struct run_commands
       : seq<
-           opt< whitespace >,
+           optional_whitespace,
            command,
-           opt< whitespace >,
+           optional_whitespace,
            opt< redir_stdin >,
-           opt< whitespace >,
-           star< seq< pipe, opt< whitespace >, command, opt< whitespace > > >,
+           optional_whitespace,
+           star< seq< pipe, optional_whitespace, command, optional_whitespace > >,
            opt< redir_stdout >,
-           opt< whitespace >,
+           optional_whitespace,
            opt< background >,
-           opt< whitespace >
+           optional_whitespace
         >
    {
    };
 
-   struct exit_command
+   struct exit
        : seq<
-            opt< whitespace >,
-            exit,
-            opt< whitespace >
+            optional_whitespace,
+            exit_keyword,
+            optional_whitespace
          >
    {
    };
 
-   struct change_directory_command
+   struct change_directory
       : seq<
-           opt< whitespace >,
-           cd,
+           optional_whitespace,
+           cd_keyword,
            whitespace,
            directory,
-           opt< whitespace >
+           optional_whitespace
         >
    {
    };
@@ -128,8 +133,8 @@ namespace grammar {
    struct shell_action
       : seq<
            sor< 
-              exit_command, 
-              change_directory_command, 
+              exit, 
+              change_directory, 
               run_commands,
               nop
            >
